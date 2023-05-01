@@ -5,4 +5,4 @@ Different kinds of benchmarks written in C++.
 
 ### Example: Apple M1
 
-![./examples/apple_m1/step.png](image)
+![Update every Nth byte of an array](examples/apple_m1/step.png)
