@@ -8,4 +8,4 @@ include_directories(/usr/local/include)
 # For my utilities library
 include_directories(utilities/include)
 
-add_executable(bench source/main.cpp)
+add_executable(step source/step.cpp)
