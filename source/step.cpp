@@ -1,6 +1,10 @@
 /**
  * This benchmark measures time to access (update) every Nth byte in an array.
- * It performs multiple benchmarks with
+ *
+ * There are 2 build parameters to this benchmark:
+ *  * POLLUTE - define if you want to pollute cache before every measure
+ *  * SUM - perform a sum of bytes from the array
+ *  * UPDATE - update every byte in the array
  */
 #include <iostream>
 #include <vector>
@@ -22,15 +26,31 @@ constexpr u32 GB = 1024 * 1024 * 1024;
 f64 test(std::vector<u8>& data, const u32 step, const u32 total) {
     const auto start = std::chrono::high_resolution_clock::now();
 
+#ifdef UPDATE
     u32 i = 0;
     for (u32 bytes = 0; bytes < total; bytes += 1) {
         data[i] += 1;
         i += step;
     }
+#endif
+
+#ifdef SUM
+    u32 sum = 0;
+    u32 i = 0;
+    for (u32 bytes = 0; bytes < total; bytes += 1) {
+        sum += data[i];
+        i += step;
+    }
+#endif
 
     // Measure how much time it took us to execute
     const auto end = std::chrono::high_resolution_clock::now();
     const std::chrono::duration<f64, std::micro> duration = end - start;
+
+#ifdef SUM
+    std::cout << '#' << sum << '\n';
+#endif
+
     return duration.count();
 }
 
@@ -41,8 +61,15 @@ struct test_result {
     u32 step = 0;
 };
 
-int main() {
+static std::vector<u8> garbage(50 * MB);
+void pollute_cache() {
+    for (u32 i = 0; i < garbage.size(); i++) { garbage[i] += i; }
+    u32 sum = 0;
+    for (const auto& element : garbage) { sum += element; }
+    std::cout << "#" << sum << std::endl;
+}
 
+int main() {
     // Every test we will run 5 times to avoid noise
     constexpr u32 number_of_runs_per_test = 5;
     std::vector<test_result> test_results(256);
@@ -55,6 +82,10 @@ int main() {
     for (u32 run_id = 0; run_id < number_of_runs_per_test; run_id++) {
         for (u32 test_id = 0; test_id < test_results.size(); test_id++) {
             const u32 step = test_id + 1;
+
+#ifdef POLLUTE
+            pollute_cache();
+#endif
 
             const f64 execution_time = test(data, step, total_bytes_read);
 
