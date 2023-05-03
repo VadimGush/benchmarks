@@ -1,12 +1,12 @@
 /**
- * This benchmark reads fixed amount of elements from an array with different step ("skip" value).
- * Through measures, the step will change from 1 (skipping 0 elements before reading the next one)
- * to 256 (skipping 255 elements before reading the next one).
+ * This benchmark reads fixed amount of bytes from an array with different step ("skip" value).
+ * Through measures, the step will change from 1 (skipping 0 bytes before reading the next one)
+ * to 256 (skipping 255 bytes before reading the next one).
  *
  * There are 3 compile definitions to this benchmark that you can specify:
  *   POLLUTE    - define if you want to pollute cache before every measure (enabled by default)
- *   SUM        - perform a sum of elements from the array (doesn't involve writes to the data)
- *   UPDATE     - update every element in the array (might be slower because of writes)
+ *   SUM        - perform a sum of bytes from the array (doesn't involve writes to the data)
+ *   UPDATE     - update every byte in the array (might be slower because of writes)
  */
 #include <iostream>
 #include <vector>
@@ -24,37 +24,30 @@ constexpr u32 MB = 1024 * 1024;
 constexpr u32 GB = 1024 * 1024 * 1024;
 
 /**
- * By default we're reading every Nth byte. But you can change this type
- * to read every Nth int, short or any other type.
- */
-using data_type = u8;
-
-/**
  * This is how much data we will read in an array. By default it's 1 MB. Meaning
  * reading every Nth bytes, we will read ~ 1 000 000 bytes in total.
  */
 constexpr u32 total_bytes_read = 1 * MB;
 
 /**
- * Measures time to perform some operation on every Nth element in the provided array.
- * Which elements will be accessed are defined by "step" variable. The total number of elements
- * it defined by "total" variable. Returns total time in microseconds.
+ * Measures time to perform some operation on every Nth byte in the provided array.
+ * Returns total execution time.
  */
-f64 measure(std::vector<data_type>& data, const u32 step, const u32 total) {
+f64 measure(std::vector<u8>& data, const u32 step, const u32 total) {
     const auto start = std::chrono::high_resolution_clock::now();
 
 #ifdef UPDATE
     u32 i = 0;
-    for (u32 bytes = 0; bytes < total; bytes += sizeof(data_type)) {
+    for (u32 bytes = 0; bytes < total; bytes += 1) {
         data[i] += 1;
         i += step;
     }
 #endif
 
 #ifdef SUM
-    data_type sum = 0;
+    u32 sum = 0;
     u32 i = 0;
-    for (u32 bytes = 0; bytes < total; bytes += sizeof(data_type)) {
+    for (u32 bytes = 0; bytes < total; bytes += 1) {
         sum += data[i];
         i += step;
     }
@@ -93,11 +86,11 @@ int main() {
     // Every measure we will perform 5 times, so we can
     // filter any noise later by selecting only the fastest measures.
     constexpr u32 number_of_runs_per_test = 5;
-    std::vector<test_result> test_results(256 / sizeof(data_type));
+    std::vector<test_result> test_results(256);
 
     // Pre-allocate array that we will read (process)
-    std::vector<data_type> data((test_results.size() * total_bytes_read) / sizeof(data_type));
-    for (u32 i = 0; i < data.size(); i++) { data[i] += static_cast<data_type>(i); }
+    std::vector<u8> data(test_results.size() * total_bytes_read);
+    for (u32 i = 0; i < data.size(); i++) { data[i] += static_cast<u8>(i); }
 
     // Execute benchmarks (tests)
     for (u32 run_id = 0; run_id < number_of_runs_per_test; run_id++) {
