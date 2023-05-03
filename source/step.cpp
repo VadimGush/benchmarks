@@ -1,16 +1,20 @@
 /**
- * This benchmark measures time to access (update) every Nth byte in an array.
+ * This benchmark reads fixed amount of elements from an array with different step ("skip" value).
+ * Through measures, the step will change from 1 (skipping 0 elements before reading the next one)
+ * to 256 (skipping 255 elements before reading the next one).
  *
- * There are 2 build parameters to this benchmark:
- *  * POLLUTE - define if you want to pollute cache before every measure
- *  * SUM - perform a sum of bytes from the array
- *  * UPDATE - update every byte in the array
+ * There are 3 compile definitions to this benchmark that you can specify:
+ *   POLLUTE    - define if you want to pollute cache before every measure (enabled by default)
+ *   SUM        - perform a sum of elements from the array (doesn't involve writes to the data)
+ *   UPDATE     - update every element in the array (might be slower because of writes)
  */
 #include <iostream>
 #include <vector>
 #include <chrono>
 
 using u32 = uint32_t;
+using i32 = int32_t;
+using i64 = int64_t;
 using u8 = uint8_t;
 using f32 = float;
 using f64 = double;
@@ -20,24 +24,37 @@ constexpr u32 MB = 1024 * 1024;
 constexpr u32 GB = 1024 * 1024 * 1024;
 
 /**
- * This code updates every Nth byte (where N - defined by the provided "step" value)
- * in a given array until it will read enough bytes specified by "total" value.
+ * By default we're reading every Nth byte. But you can change this type
+ * to read every Nth int, short or any other type.
  */
-f64 test(std::vector<u8>& data, const u32 step, const u32 total) {
+using data_type = u8;
+
+/**
+ * This is how much data we will read in an array. By default it's 1 MB. Meaning
+ * reading every Nth bytes, we will read ~ 1 000 000 bytes in total.
+ */
+constexpr u32 total_bytes_read = 1 * MB;
+
+/**
+ * Measures time to perform some operation on every Nth element in the provided array.
+ * Which elements will be accessed are defined by "step" variable. The total number of elements
+ * it defined by "total" variable. Returns total time in microseconds.
+ */
+f64 measure(std::vector<data_type>& data, const u32 step, const u32 total) {
     const auto start = std::chrono::high_resolution_clock::now();
 
 #ifdef UPDATE
     u32 i = 0;
-    for (u32 bytes = 0; bytes < total; bytes += 1) {
+    for (u32 bytes = 0; bytes < total; bytes += sizeof(data_type)) {
         data[i] += 1;
         i += step;
     }
 #endif
 
 #ifdef SUM
-    u32 sum = 0;
+    data_type sum = 0;
     u32 i = 0;
-    for (u32 bytes = 0; bytes < total; bytes += 1) {
+    for (u32 bytes = 0; bytes < total; bytes += sizeof(data_type)) {
         sum += data[i];
         i += step;
     }
@@ -54,41 +71,48 @@ f64 test(std::vector<u8>& data, const u32 step, const u32 total) {
     return duration.count();
 }
 
-constexpr u32 total_bytes_read = 1 * MB;
 
 struct test_result {
     std::vector<f64> time{};
     u32 step = 0;
 };
 
-static std::vector<u8> garbage(50 * MB);
+/**
+ * This code tries to pollute the cache by processing some unrelated data.
+ * In this case simply an array of 100 MB of data.
+ */
+static std::vector<i64> garbage(100 * MB / sizeof(i64));
 void pollute_cache() {
-    for (u32 i = 0; i < garbage.size(); i++) { garbage[i] += i; }
-    u32 sum = 0;
+    for (u32 i = 0; i < garbage.size(); i++) { garbage[i] += static_cast<i64>(i); }
+    i64 sum = 0;
     for (const auto& element : garbage) { sum += element; }
     std::cout << "#" << sum << std::endl;
 }
 
 int main() {
-    // Every test we will run 5 times to avoid noise
+    // Every measure we will perform 5 times, so we can
+    // filter any noise later by selecting only the fastest measures.
     constexpr u32 number_of_runs_per_test = 5;
-    std::vector<test_result> test_results(256);
+    std::vector<test_result> test_results(256 / sizeof(data_type));
 
-    // Pre-allocate data
-    std::vector<u8> data(test_results.size() * total_bytes_read);
-    for (u32 i = 0; i < data.size(); i++) { data[i] += i; }
+    // Pre-allocate array that we will read (process)
+    std::vector<data_type> data((test_results.size() * total_bytes_read) / sizeof(data_type));
+    for (u32 i = 0; i < data.size(); i++) { data[i] += static_cast<data_type>(i); }
 
     // Execute benchmarks (tests)
     for (u32 run_id = 0; run_id < number_of_runs_per_test; run_id++) {
         for (u32 test_id = 0; test_id < test_results.size(); test_id++) {
             const u32 step = test_id + 1;
 
+            // We need to pollute CPU cache in order to avoid previous measures
+            // affecting the current one.
 #ifdef POLLUTE
             pollute_cache();
 #endif
 
-            const f64 execution_time = test(data, step, total_bytes_read);
+            const f64 execution_time = measure(data, step, total_bytes_read);
 
+            // Write down measurements
             test_results[test_id].time.emplace_back(execution_time);
             test_results[test_id].step = step;
         }
@@ -98,7 +122,7 @@ int main() {
     // names of the columns first
     std::cout << "step,time" << std::endl;
     for (const auto& test_result : test_results) {
-        // we will select the fastest execution time
+        // We will select the fastest execution time
         const f64 execution_time = *std::min_element(test_result.time.begin(), test_result.time.end());
         std::cout << test_result.step << "," << execution_time << '\n';
     }

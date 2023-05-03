@@ -29,6 +29,8 @@ def step(name, type, title):
 
 print("Benchmarks (version: 03.05.2023)")
 print("Written by: https://github.com/vadimgush\n")
+print("NOTE: If you're running these benchmarks on a laptop, make sure that you're on power adapter.\n"
+      "Otherwise, CPU might prioritise efficiency cores which are less powerfull and have less cache.\n")
 build()
 
 print("-> Benchmark: Sum every Nth byte of an array")
@@ -37,4 +39,4 @@ step("step-sum", "sum", "Sum every Nth byte of an array")
 print("-> Benchmark: Update every Nth byte of an array")
 step("step-update", "update", "Update every Nth byte of an array")
 
-
+print("\n-> All benchmarks completed!\n")
