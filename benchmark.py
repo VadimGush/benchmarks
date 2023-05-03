@@ -11,7 +11,7 @@ def build():
     os.system("mkdir results")
     print("\n-> Compilation complete!")
 
-def step(type, title):
+def step(name, type, title):
     name = "step_" + type
     os.system("./build/" + name + " > ./build/" + name + ".csv")
 
@@ -25,16 +25,16 @@ def step(type, title):
     ax.grid(True)
     ax.set_title(title)
 
-    plt.savefig("results/" + type + ".png")
+    plt.savefig("results/" + name + ".png", dpi=300)
 
 print("Benchmarks (version: 03.05.2023)")
 print("Written by: https://github.com/vadimgush\n")
 build()
 
 print("-> Benchmark: Sum every Nth byte of an array")
-step("sum", "Sum every Nth byte of an array")
+step("step-sum", "sum", "Sum every Nth byte of an array")
 
 print("-> Benchmark: Update every Nth byte of an array")
-step("update", "Update every Nth byte of an array")
+step("step-update", "update", "Update every Nth byte of an array")
 
 
