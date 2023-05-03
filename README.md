@@ -13,4 +13,4 @@ python benchmark.py
 
 ### Example: Apple M1
 
-![Update every Nth byte of an array](examples/apple_m1/step.png)
+![Update every Nth byte of an array](https://github.com/VadimGush/benchmarks/blob/7c6c91e0c5231b29f4405e5fec9257027f2cbaa1/examples/apple_m1/step_sum.png)
