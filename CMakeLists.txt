@@ -15,3 +15,5 @@ target_compile_definitions(step_sum PRIVATE POLLUTE)
 add_executable(step_update source/step.cpp)
 target_compile_definitions(step_update PRIVATE UPDATE)
 target_compile_definitions(step_update PRIVATE POLLUTE)
+
+add_executable(throughput source/throughput.cpp)

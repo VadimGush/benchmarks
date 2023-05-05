@@ -10,58 +10,47 @@
  */
 #include <iostream>
 #include <vector>
-#include <chrono>
+#include <utils/types.h>
+#include <utils/system.h>
 
-using u32 = uint32_t;
-using i32 = int32_t;
-using i64 = int64_t;
-using u8 = uint8_t;
-using f32 = float;
-using f64 = double;
-
-constexpr u32 KB = 1024;
-constexpr u32 MB = 1024 * 1024;
-constexpr u32 GB = 1024 * 1024 * 1024;
-
-/**
- * This is how much data we will read in an array. By default it's 1 MB. Meaning
- * reading every Nth bytes, we will read ~ 1 000 000 bytes in total.
- */
+// Type of data that we will read from array (byte - by default)
+using data_type = u8;
+// How much times we will run every measurement
+constexpr u32 number_of_runs_per_test = 5;
+// How much actual data we will read in total (skipped data not included)
 constexpr u32 total_bytes_read = 1 * MB;
 
 /**
  * Measures time to perform some operation on every Nth byte in the provided array.
  * Returns total execution time.
  */
-f64 measure(std::vector<u8>& data, const u32 step, const u32 total) {
-    const auto start = std::chrono::high_resolution_clock::now();
+f64 measure(std::vector<data_type>& data, const u32 step, const u32 total) {
+    sys::clock<f64> clock{};
 
 #ifdef UPDATE
     u32 i = 0;
-    for (u32 bytes = 0; bytes < total; bytes += 1) {
+    for (u32 bytes = 0; bytes < total; bytes += sizeof(data_type)) {
         data[i] += 1;
         i += step;
     }
 #endif
 
 #ifdef SUM
-    u32 sum = 0;
+    data_type sum = 0;
     u32 i = 0;
-    for (u32 bytes = 0; bytes < total; bytes += 1) {
+    for (u32 bytes = 0; bytes < total; bytes += sizeof(data_type)) {
         sum += data[i];
         i += step;
     }
 #endif
 
-    // Measure how much time it took us to execute
-    const auto end = std::chrono::high_resolution_clock::now();
-    const std::chrono::duration<f64, std::micro> duration = end - start;
+    clock.complete();
 
 #ifdef SUM
     std::cout << '#' << sum << '\n';
 #endif
 
-    return duration.count();
+    return clock.micro();
 }
 
 
@@ -83,14 +72,11 @@ void pollute_cache() {
 }
 
 int main() {
-    // Every measure we will perform 5 times, so we can
-    // filter any noise later by selecting only the fastest measures.
-    constexpr u32 number_of_runs_per_test = 5;
-    std::vector<test_result> test_results(256);
+    std::vector<test_result> test_results(256 / sizeof(data_type));
 
     // Pre-allocate array that we will read (process)
-    std::vector<u8> data(test_results.size() * total_bytes_read);
-    for (u32 i = 0; i < data.size(); i++) { data[i] += static_cast<u8>(i); }
+    std::vector<data_type> data((test_results.size() * total_bytes_read) / sizeof(data_type));
+    for (u32 i = 0; i < data.size(); i++) { data[i] += static_cast<data_type>(i); }
 
     // Execute benchmarks (tests)
     for (u32 run_id = 0; run_id < number_of_runs_per_test; run_id++) {
