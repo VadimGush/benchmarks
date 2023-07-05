@@ -11,6 +11,9 @@ In order to build and run benchmarks you should have any C++ compiler, CMake, ma
 python benchmark.py
 ```
 
-### Example: Apple M1
+## Useful links
 
-![Update every Nth byte of an array](https://github.com/VadimGush/benchmarks/blob/7c6c91e0c5231b29f4405e5fec9257027f2cbaa1/examples/apple_m1/step_sum.png)
+ * [Learn the architecture - Optimizing C code with Neon intrinsics](https://developer.arm.com/documentation/102467/0200?lang=en)
+ * [NEON Programmings Guide](https://developer.arm.com/documentation/den0018/a/?lang=en)
+
+
