@@ -13,7 +13,8 @@ python benchmark.py
 
 ## Useful links
 
- * [Learn the architecture - Optimizing C code with Neon intrinsics](https://developer.arm.com/documentation/102467/0200?lang=en)
- * [NEON Programmings Guide](https://developer.arm.com/documentation/den0018/a/?lang=en)
+ * **ARM**
+   * [Learn the architecture - Optimizing C code with Neon intrinsics](https://developer.arm.com/documentation/102467/0200?lang=en)
+   * [NEON Programmings Guide](https://developer.arm.com/documentation/den0018/a/?lang=en)
 
 
